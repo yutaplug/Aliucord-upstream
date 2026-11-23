@@ -94,6 +94,7 @@ import com.linecorp.apng.decoder.Apng
 import com.lyft.kronos.KronosClock
 import com.lytefast.flexinput.R
 import de.robv.android.xposed.XC_MethodHook.MethodHookParam
+import kotlin.math.abs
 import rx.Emitter
 import rx.Observable
 import rx.subjects.Subject
@@ -251,11 +252,17 @@ internal class CoreFixes : CorePlugin(Manifest("CoreFixes")) {
             Int::class.javaPrimitiveType!!,
             MotionEvent::class.java,
             Int::class.javaPrimitiveType!!,
-        ) { (_, action: Int, _: MotionEvent, _: Int) ->
+        ) { (_, action: Int, event: MotionEvent, pointerIndex: Int) ->
             val guild = pressedGuild ?: return@before
             if (mCallback !is GuildsDragAndDropCallback || !guildHeld ||
                 action != MotionEvent.ACTION_MOVE ||
                 guild !is GuildsDragAndDropCallback.DraggableViewHolder || !guild.canDrag()) return@before
+
+            // Some touchscreens report tiny movements while the finger rests, which would close the menu
+            // as soon as it opens. Only start dragging once the finger moved past the touch slop.
+            val slop = ViewConfiguration.get(mRecyclerView.context).scaledTouchSlop
+            if (abs(event.getX(pointerIndex) - mInitialTouchX) < slop &&
+                abs(event.getY(pointerIndex) - mInitialTouchY) < slop) return@before
 
             pressedGuild = null
 
