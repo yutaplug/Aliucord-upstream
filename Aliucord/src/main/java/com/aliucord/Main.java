@@ -87,6 +87,12 @@ public final class Main {
             Utils.appActivity = (AppActivity) param.thisObject;
         }));
 
+        // onCreate alone leaves appActivity pointing at a destroyed activity once a screen opened
+        // on top (settings, search, media viewer, plugin pages) is closed. Track the resumed one.
+        Patcher.addPatch(AppActivity.class, "onResume", new Class<?>[0], new Hook(param -> {
+            Utils.appActivity = (AppActivity) param.thisObject;
+        }));
+
         Patcher.addPatch(WidgetChatList.class.getDeclaredConstructor(), new Hook(param -> {
             Utils.widgetChatList = (WidgetChatList) param.thisObject;
         }));
